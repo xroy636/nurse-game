@@ -294,7 +294,6 @@
             bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
-            display: none;
             z-index: 90;
         }
 
@@ -306,7 +305,7 @@
         }
 
         .control-btn {
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.9);
             border: 2px solid #1976d2;
             border-radius: 50%;
             font-size: 1.2rem;
@@ -315,6 +314,7 @@
             align-items: center;
             justify-content: center;
             user-select: none;
+            touch-action: manipulation;
         }
 
         .control-btn:active {
@@ -325,10 +325,6 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
-            .mobile-controls {
-                display: block;
-            }
-
             .instructions {
                 bottom: 200px;
                 font-size: 0.8rem;
@@ -352,7 +348,7 @@
         </div>
 
         <div class="instructions">
-            <strong>🎮 How to Play:</strong> Use arrow keys (or mobile controls) to move your nurse. 
+            <strong>🎮 How to Play:</strong> Use arrow keys or WASD to move your nurse. 
             Touch sick patients 🤒 to heal them, collect hearts 💖 and vaccines 💉 for points, 
             avoid viruses 🦠! Save as many patients as possible!
         </div>
@@ -395,7 +391,12 @@
         let nurseX = 100;
         let nurseY = 200;
         let entities = [];
-        let keys = {};
+        let keys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
 
         // Game elements
         const gameArea = document.getElementById('gameArea');
@@ -403,6 +404,76 @@
         const scoreElement = document.getElementById('score');
         const healthElement = document.getElementById('health');
         const levelElement = document.getElementById('level');
+
+        // Keyboard controls - FIXED VERSION
+        document.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'arrowup':
+                case 'w':
+                    keys.up = true;
+                    break;
+                case 'arrowdown':
+                case 's':
+                    keys.down = true;
+                    break;
+                case 'arrowleft':
+                case 'a':
+                    keys.left = true;
+                    break;
+                case 'arrowright':
+                case 'd':
+                    keys.right = true;
+                    break;
+            }
+            e.preventDefault();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'arrowup':
+                case 'w':
+                    keys.up = false;
+                    break;
+                case 'arrowdown':
+                case 's':
+                    keys.down = false;
+                    break;
+                case 'arrowleft':
+                case 'a':
+                    keys.left = false;
+                    break;
+                case 'arrowright':
+                case 'd':
+                    keys.right = false;
+                    break;
+            }
+        });
+
+        // Mobile controls - FIXED VERSION
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            const direction = btn.dataset.direction;
+            if (direction) {
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    keys[direction] = true;
+                });
+                
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    keys[direction] = false;
+                });
+
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    keys[direction] = true;
+                });
+                
+                btn.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    keys[direction] = false;
+                });
+            }
+        });
 
         // Initialize game
         function initGame() {
@@ -434,35 +505,6 @@
             // Start game loop
             gameLoop();
         }
-
-        // Keyboard controls
-        document.addEventListener('keydown', (e) => {
-            keys[e.code] = true;
-            e.preventDefault();
-        });
-
-        document.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
-        });
-
-        // Mobile controls
-        document.querySelectorAll('.control-btn').forEach(btn => {
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                const direction = btn.dataset.direction;
-                if (direction) {
-                    keys[`Arrow${direction.charAt(0).toUpperCase() + direction.slice(1)}`] = true;
-                }
-            });
-            
-            btn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                const direction = btn.dataset.direction;
-                if (direction) {
-                    keys[`Arrow${direction.charAt(0).toUpperCase() + direction.slice(1)}`] = false;
-                }
-            });
-        });
 
         // Spawn functions
         function spawnPatients(count) {
@@ -537,26 +579,26 @@
                     type: 'virus',
                     x: x,
                     y: y,
-                    dx: (Math.random() - 0.5) * 2,
-                    dy: (Math.random() - 0.5) * 2
+                    dx: (Math.random() - 0.5) * 3,
+                    dy: (Math.random() - 0.5) * 3
                 });
             }
         }
 
-        // Update nurse position
+        // Update nurse position - FIXED VERSION
         function updateNurse() {
-            const speed = 4;
+            const speed = 5;
             
-            if (keys['ArrowUp'] || keys['KeyW']) {
+            if (keys.up) {
                 nurseY = Math.max(90, nurseY - speed);
             }
-            if (keys['ArrowDown'] || keys['KeyS']) {
+            if (keys.down) {
                 nurseY = Math.min(window.innerHeight - 60, nurseY + speed);
             }
-            if (keys['ArrowLeft'] || keys['KeyA']) {
+            if (keys.left) {
                 nurseX = Math.max(0, nurseX - speed);
             }
-            if (keys['ArrowRight'] || keys['KeyD']) {
+            if (keys.right) {
                 nurseX = Math.min(window.innerWidth - 50, nurseX + speed);
             }
             
@@ -592,7 +634,7 @@
                     Math.pow(nurseX - entity.x, 2) + Math.pow(nurseY - entity.y, 2)
                 );
                 
-                if (distance < 35) {
+                if (distance < 40) {
                     if (entity.type === 'patient' && !entity.healed) {
                         // Heal patient
                         entity.healed = true;
@@ -709,6 +751,14 @@
             // Clear all entities
             const allEntities = gameArea.querySelectorAll('.patient, .collectible, .virus, .heal-effect, .damage-effect');
             allEntities.forEach(entity => entity.remove());
+            
+            // Reset keys
+            keys = {
+                up: false,
+                down: false,
+                left: false,
+                right: false
+            };
             
             // Restart game
             initGame();
