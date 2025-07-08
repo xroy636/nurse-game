@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🩺 Nurse Hero - Save the Day! 💉</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .title {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            color: #1976d2;
+            font-weight: bold;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            font-weight: bold;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .score { color: #4caf50; }
+        .health { color: #f44336; }
+        .level { color: #ff9800; }
+
+        .game-area {
+            position: absolute;
+            top: 80px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
+        }
+
+        /* Nurse Character */
+        .nurse {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: #fff;
+            border-radius: 50%;
+            border: 3px solid #1976d2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            z-index: 50;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s ease;
+        }
+
+        .nurse.healing {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px #4caf50;
+        }
+
+        /* Patients */
+        .patient {
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            background: #ffcdd2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border: 3px solid #f44336;
+            animation: patient-wobble 2s ease-in-out infinite;
+            cursor: pointer;
+        }
+
+        .patient.healed {
+            background: #c8e6c9;
+            border-color: #4caf50;
+            animation: patient-happy 1s ease-in-out infinite;
+        }
+
+        @keyframes patient-wobble {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes patient-happy {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Collectibles */
+        .collectible {
+            position: absolute;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            animation: float 2s ease-in-out infinite;
+            cursor: pointer;
+        }
+
+        .heart {
+            background: linear-gradient(45deg, #ff4081, #f06292);
+            box-shadow: 0 4px 15px rgba(255, 64, 129, 0.4);
+        }
+
+        .vaccine {
+            background: linear-gradient(45deg, #4caf50, #66bb6a);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .medicine {
+            background: linear-gradient(45deg, #2196f3, #42a5f5);
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Viruses */
+        .virus {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #f44336, #ef5350);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+            animation: virus-pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes virus-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Effects */
+        .heal-effect {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #4caf50;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: heal-effect 1s ease-out forwards;
+        }
+
+        @keyframes heal-effect {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
+        .damage-effect {
+            position: absolute;
+            color: #f44336;
+            font-size: 1.5rem;
+            font-weight: bold;
+            pointer-events: none;
+            animation: damage-effect 1s ease-out forwards;
+        }
+
+        @keyframes damage-effect {
+            0% {
+                transform: translateY(0px);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+        }
+
+        /* Game Over Screen */
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-over h2 {
+            font-size: 2.5rem;
+            color: #1976d2;
+            margin-bottom: 20px;
+        }
+
+        .final-score {
+            font-size: 1.5rem;
+            color: #4caf50;
+            margin-bottom: 30px;
+        }
+
+        .restart-btn {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            background: linear-gradient(45deg, #1976d2, #42a5f5);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(25, 118, 210, 0.4);
+        }
+
+        /* Instructions */
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            text-align: center;
+            z-index: 90;
+        }
+
+        /* Mobile Controls */
+        .mobile-controls {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            z-index: 90;
+        }
+
+        .control-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 5px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid #1976d2;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .control-btn:active {
+            background: #1976d2;
+            color: white;
+            transform: scale(0.9);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: block;
+            }
+
+            .instructions {
+                bottom: 200px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="title">🩺 Nurse Hero</div>
+            <div class="stats">
+                <div class="stat-item score">Score: <span id="score">0</span></div>
+                <div class="stat-item health">❤️ <span id="health">100</span></div>
+                <div class="stat-item level">Level: <span id="level">1</span></div>
+            </div>
+        </div>
+
+        <div class="game-area" id="gameArea">
+            <div class="nurse" id="nurse">👩‍⚕️</div>
+        </div>
+
+        <div class="instructions">
+            <strong>🎮 How to Play:</strong> Use arrow keys (or mobile controls) to move your nurse. 
+            Touch sick patients 🤒 to heal them, collect hearts 💖 and vaccines 💉 for points, 
+            avoid viruses 🦠! Save as many patients as possible!
+        </div>
+
+        <div class="mobile-controls">
+            <div class="control-pad">
+                <div></div>
+                <div class="control-btn" data-direction="up">⬆️</div>
+                <div></div>
+                <div class="control-btn" data-direction="left">⬅️</div>
+                <div style="background: #4caf50; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">🩺</div>
+                <div class="control-btn" data-direction="right">➡️</div>
+                <div></div>
+                <div class="control-btn" data-direction="down">⬇️</div>
+                <div></div>
+            </div>
+        </div>
+
+        <div class="game-over" id="gameOver">
+            <div class="game-over-content">
+                <h2>🏥 Mission Complete!</h2>
+                <div class="final-score">Final Score: <span id="finalScore">0</span></div>
+                <p style="margin-bottom: 20px; color: #666;">
+                    Thank you for being a healthcare hero! 
+                    You've made a difference in so many lives! 💙
+                </p>
+                <button class="restart-btn" onclick="restartGame()">
+                    🚀 Start New Mission
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        let gameRunning = true;
+        let score = 0;
+        let health = 100;
+        let level = 1;
+        let nurseX = 100;
+        let nurseY = 200;
+        let entities = [];
+        let keys = {};
+
+        // Game elements
+        const gameArea = document.getElementById('gameArea');
+        const nurse = document.getElementById('nurse');
+        const scoreElement = document.getElementById('score');
+        const healthElement = document.getElementById('health');
+        const levelElement = document.getElementById('level');
+
+        // Initialize game
+        function initGame() {
+            // Reset game state
+            gameRunning = true;
+            score = 0;
+            health = 100;
+            level = 1;
+            nurseX = 100;
+            nurseY = 200;
+            entities = [];
+            
+            // Update UI
+            updateUI();
+            
+            // Position nurse
+            nurse.style.left = nurseX + 'px';
+            nurse.style.top = nurseY + 'px';
+            
+            // Clear existing entities
+            const existingEntities = gameArea.querySelectorAll('.patient, .collectible, .virus');
+            existingEntities.forEach(entity => entity.remove());
+            
+            // Spawn initial entities
+            spawnPatients(3);
+            spawnCollectibles(2);
+            spawnViruses(1);
+            
+            // Start game loop
+            gameLoop();
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            e.preventDefault();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // Mobile controls
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const direction = btn.dataset.direction;
+                if (direction) {
+                    keys[`Arrow${direction.charAt(0).toUpperCase() + direction.slice(1)}`] = true;
+                }
+            });
+            
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const direction = btn.dataset.direction;
+                if (direction) {
+                    keys[`Arrow${direction.charAt(0).toUpperCase() + direction.slice(1)}`] = false;
+                }
+            });
+        });
+
+        // Spawn functions
+        function spawnPatients(count) {
+            for (let i = 0; i < count; i++) {
+                const patient = document.createElement('div');
+                patient.className = 'patient';
+                patient.innerHTML = '🤒';
+                
+                const x = Math.random() * (window.innerWidth - 100) + 50;
+                const y = Math.random() * (window.innerHeight - 200) + 120;
+                
+                patient.style.left = x + 'px';
+                patient.style.top = y + 'px';
+                
+                gameArea.appendChild(patient);
+                entities.push({
+                    element: patient,
+                    type: 'patient',
+                    x: x,
+                    y: y,
+                    healed: false
+                });
+            }
+        }
+
+        function spawnCollectibles(count) {
+            const types = [
+                { class: 'heart', emoji: '💖', points: 20 },
+                { class: 'vaccine', emoji: '💉', points: 30 },
+                { class: 'medicine', emoji: '💊', points: 25 }
+            ];
+            
+            for (let i = 0; i < count; i++) {
+                const type = types[Math.floor(Math.random() * types.length)];
+                const collectible = document.createElement('div');
+                collectible.className = `collectible ${type.class}`;
+                collectible.innerHTML = type.emoji;
+                
+                const x = Math.random() * (window.innerWidth - 100) + 50;
+                const y = Math.random() * (window.innerHeight - 200) + 120;
+                
+                collectible.style.left = x + 'px';
+                collectible.style.top = y + 'px';
+                
+                gameArea.appendChild(collectible);
+                entities.push({
+                    element: collectible,
+                    type: 'collectible',
+                    x: x,
+                    y: y,
+                    points: type.points,
+                    subtype: type.class
+                });
+            }
+        }
+
+        function spawnViruses(count) {
+            for (let i = 0; i < count; i++) {
+                const virus = document.createElement('div');
+                virus.className = 'virus';
+                virus.innerHTML = '🦠';
+                
+                const x = Math.random() * (window.innerWidth - 100) + 50;
+                const y = Math.random() * (window.innerHeight - 200) + 120;
+                
+                virus.style.left = x + 'px';
+                virus.style.top = y + 'px';
+                
+                gameArea.appendChild(virus);
+                entities.push({
+                    element: virus,
+                    type: 'virus',
+                    x: x,
+                    y: y,
+                    dx: (Math.random() - 0.5) * 2,
+                    dy: (Math.random() - 0.5) * 2
+                });
+            }
+        }
+
+        // Update nurse position
+        function updateNurse() {
+            const speed = 4;
+            
+            if (keys['ArrowUp'] || keys['KeyW']) {
+                nurseY = Math.max(90, nurseY - speed);
+            }
+            if (keys['ArrowDown'] || keys['KeyS']) {
+                nurseY = Math.min(window.innerHeight - 60, nurseY + speed);
+            }
+            if (keys['ArrowLeft'] || keys['KeyA']) {
+                nurseX = Math.max(0, nurseX - speed);
+            }
+            if (keys['ArrowRight'] || keys['KeyD']) {
+                nurseX = Math.min(window.innerWidth - 50, nurseX + speed);
+            }
+            
+            nurse.style.left = nurseX + 'px';
+            nurse.style.top = nurseY + 'px';
+        }
+
+        // Update viruses
+        function updateViruses() {
+            entities.forEach(entity => {
+                if (entity.type === 'virus') {
+                    entity.x += entity.dx;
+                    entity.y += entity.dy;
+                    
+                    // Bounce off walls
+                    if (entity.x <= 0 || entity.x >= window.innerWidth - 40) {
+                        entity.dx *= -1;
+                    }
+                    if (entity.y <= 90 || entity.y >= window.innerHeight - 40) {
+                        entity.dy *= -1;
+                    }
+                    
+                    entity.element.style.left = entity.x + 'px';
+                    entity.element.style.top = entity.y + 'px';
+                }
+            });
+        }
+
+        // Check collisions
+        function checkCollisions() {
+            entities.forEach((entity, index) => {
+                const distance = Math.sqrt(
+                    Math.pow(nurseX - entity.x, 2) + Math.pow(nurseY - entity.y, 2)
+                );
+                
+                if (distance < 35) {
+                    if (entity.type === 'patient' && !entity.healed) {
+                        // Heal patient
+                        entity.healed = true;
+                        entity.element.className = 'patient healed';
+                        entity.element.innerHTML = '😊';
+                        score += 50;
+                        createHealEffect(entity.x, entity.y);
+                        
+                        nurse.classList.add('healing');
+                        setTimeout(() => {
+                            nurse.classList.remove('healing');
+                        }, 300);
+                        
+                        // Remove patient after 2 seconds and spawn new one
+                        setTimeout(() => {
+                            entity.element.remove();
+                            entities.splice(index, 1);
+                            spawnPatients(1);
+                        }, 2000);
+                        
+                    } else if (entity.type === 'collectible') {
+                        // Collect item
+                        score += entity.points;
+                        
+                        if (entity.subtype === 'heart') {
+                            health = Math.min(100, health + 20);
+                        }
+                        
+                        createHealEffect(entity.x, entity.y);
+                        entity.element.remove();
+                        entities.splice(index, 1);
+                        
+                        // Spawn new collectible after delay
+                        setTimeout(() => {
+                            spawnCollectibles(1);
+                        }, 3000);
+                        
+                    } else if (entity.type === 'virus') {
+                        // Hit by virus
+                        health -= 15;
+                        createDamageEffect(nurseX, nurseY);
+                        
+                        // Move virus to new position
+                        entity.x = Math.random() * (window.innerWidth - 100) + 50;
+                        entity.y = Math.random() * (window.innerHeight - 200) + 120;
+                        entity.element.style.left = entity.x + 'px';
+                        entity.element.style.top = entity.y + 'px';
+                        
+                        if (health <= 0) {
+                            gameOver();
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create effects
+        function createHealEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'heal-effect';
+            effect.style.left = x + 'px';
+            effect.style.top = y + 'px';
+            gameArea.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 1000);
+        }
+
+        function createDamageEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'damage-effect';
+            effect.innerHTML = '-15';
+            effect.style.left = x + 'px';
+            effect.style.top = y + 'px';
+            gameArea.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 1000);
+        }
+
+        // Update UI
+        function updateUI() {
+            scoreElement.textContent = score;
+            healthElement.textContent = health;
+            levelElement.textContent = level;
+            
+            // Level up every 200 points
+            const newLevel = Math.floor(score / 200) + 1;
+            if (newLevel > level) {
+                level = newLevel;
+                levelElement.textContent = level;
+                
+                // Spawn more entities at higher levels
+                if (level % 2 === 0) {
+                    spawnViruses(1);
+                }
+                spawnCollectibles(1);
+            }
+        }
+
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+
+        // Restart game
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            
+            // Clear all entities
+            const allEntities = gameArea.querySelectorAll('.patient, .collectible, .virus, .heal-effect, .damage-effect');
+            allEntities.forEach(entity => entity.remove());
+            
+            // Restart game
+            initGame();
+        }
+
+        // Main game loop
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            updateNurse();
+            updateViruses();
+            checkCollisions();
+            updateUI();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start game when page loads
+        window.onload = function() {
+            initGame();
+        };
+    </script>
+</body>
+</html>
